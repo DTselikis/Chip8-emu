@@ -3,6 +3,7 @@
 #include "chip8.hpp"
 #include "OpcodeException.hpp"
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 #define RES_MULT 20
 #define WIDTH 64
@@ -10,6 +11,7 @@
 #define PIXELS WIDTH * HEIGHT
 
 void displayError(const sf::RenderWindow &window, const std::string errorText, const uint8_t errorCode);
+void playSound(void *sound);
 
 
 int main(int argc, char* argv[]) {
@@ -17,6 +19,19 @@ int main(int argc, char* argv[]) {
 	srand(static_cast<unsigned int>(time(nullptr)));
 
 	sf::RenderWindow window(sf::VideoMode(64 * RES_MULT, 32 * RES_MULT), "Chip8 Emulator", sf::Style::Titlebar | sf::Style::Close);
+	
+	// Using pointer so it can later be ckecked if sound loaded successfully
+	// withoud the need of additional code
+	sf::SoundBuffer *soundBuffer = new sf::SoundBuffer();
+	sf::Sound *sound = new sf::Sound();
+	if (!(argc > 2 && soundBuffer->loadFromFile(argv[2]))) {
+		delete soundBuffer;
+		delete sound;
+		sound = NULL;
+	}
+	else {
+		sound->setBuffer(*soundBuffer);
+	}
 
 	Chip8 chip8;
 	try {
@@ -103,6 +118,8 @@ int main(int argc, char* argv[]) {
 
 		window.display();
 	}
+
+	delete sound;
 	
 	return 0;
 }
@@ -121,4 +138,18 @@ void displayError(const sf::RenderWindow &window, const std::string errorText, c
 	window.waitEvent(event);
 
 	exit(errorCode);
+}
+
+void playSound(void *sound) {
+	// Emulator class will not be dependent from a certain library
+	// thus we use a void pointer and typecast it to our library
+	sf::Sound *playSound;
+	if (sound) {
+		playSound = (sf::Sound*) sound;
+		playSound->play();
+	}
+	else {
+		// Play system sound
+		fprintf(stdout, "%c", 7);
+	}
 }

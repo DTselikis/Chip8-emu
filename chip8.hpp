@@ -9,6 +9,7 @@ private:
 	uint16_t pc;
 	bool waitForKey;
 	bool isRunning;
+	void *sound;
 
 	uint8_t pixels[64 * 32];
 	uint8_t keys[16];
@@ -27,5 +28,7 @@ public:
 	void loadROM(const char* fName);
 	uint8_t* getPixels(void);
 	void emulateCycle(void);
+	void setSound(void *sound);
+	void playSound(void (*func)(void *sound));
 
 };

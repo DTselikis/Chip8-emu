@@ -61,7 +61,7 @@ void Chip8::emulateCycle(void) {
         }
         if (soundTimer > 0) {
             if (soundTimer == 1) {
-                fprintf(stdout, "%c", 7);
+                playSound();
             }
             soundTimer--;
         }
@@ -102,6 +102,16 @@ void Chip8::loadROM(const char* fName) {
     rom.read((char*)(memory + 0x200), length);
 
     rom.close();
+}
+
+void Chip8::playSound(void (*func)(void *sound)) {
+    // Make soundPtr a void pointer so the emulator implementation
+    // is not library dependend
+    func(sound);
+}
+
+void Chip8::setSound(void *sound) {
+    this->sound = sound;
 }
 
 bool Chip8::decodeOpCode(const uint16_t opcode) {

@@ -29,6 +29,8 @@ Chip8::Chip8() {
     this->opcode = 0;
     this->I = 0;
     this->sp = -1;
+    this->playSound = NULL;
+    this->sound = NULL;
 
     std::fill_n(memory, 4096, 0); // Clear memory
     std::fill_n(V, 16, 0); // Clear registers
@@ -61,7 +63,12 @@ void Chip8::emulateCycle(void) {
         }
         if (soundTimer > 0) {
             if (soundTimer == 1) {
-                playSound();
+                if (playSound) {
+                    playSound(sound);
+                }
+                else {
+                    // TODO Inform about error
+                }
             }
             soundTimer--;
         }
@@ -104,13 +111,10 @@ void Chip8::loadROM(const char* fName) {
     rom.close();
 }
 
-void Chip8::playSound(void (*func)(void *sound)) {
-    // Make soundPtr a void pointer so the emulator implementation
+void Chip8::setSound(void (*func)(void *sound), void *sound) {
+    // Make sound a void pointer so the emulator implementation
     // is not library dependend
-    func(sound);
-}
-
-void Chip8::setSound(void *sound) {
+    this->playSound = func;
     this->sound = sound;
 }
 

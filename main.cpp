@@ -36,6 +36,7 @@ int main(int argc, char* argv[]) {
 	Chip8 chip8;
 	try {
 		chip8.loadROM(argv[1]);
+		chip8.setSound(playSound, (void *) sound);
 	}
 	catch (const std::runtime_error & error) {
 		displayError(window, "File error", 3);

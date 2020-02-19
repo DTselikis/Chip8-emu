@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-void displayError(const sf::RenderWindow &window, const std::string errorText, const uint8_t errorCode) {
+void displayError(sf::RenderWindow &window, const std::string errorText, const uint8_t errorCode) {
 	sf::Text errorMsg;
 	errorMsg.setCharacterSize(256);
 	errorMsg.setFillColor(sf::Color::Red);

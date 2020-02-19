@@ -64,10 +64,8 @@ void Chip8::emulateCycle(void) {
         if (soundTimer > 0) {
             if (soundTimer == 1) {
                 if (playSound) {
+                    // If a sound implementation was provided
                     playSound(sound);
-                }
-                else {
-                    // TODO Inform about error
                 }
             }
             soundTimer--;

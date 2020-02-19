@@ -70,6 +70,11 @@ void Chip8::emulateCycle(void) {
             }
             soundTimer--;
         }
+        // If the execution is not halted
+        if (isRunning) {
+            // Increase program counter
+            pc += 2;
+        }
     }
 }
 
@@ -88,7 +93,9 @@ void Chip8::keyRelease(const uint8_t key) {
     keys[key] = false;
 }
 
-uint8_t* Chip8::getPixels(void) {
+uint8_t (&Chip8::getPixels(void))[RES]
+{
+    // Return a reference of the array
     return pixels;
 }
 
@@ -101,7 +108,7 @@ void Chip8::loadROM(const char* fName) {
     }
     
     rom.seekg(0, rom.end);
-    uint8_t length = rom.tellg;
+    uint8_t length = rom.tellg();
     rom.seekg(0, rom.beg);
 
     rom.read((char*)(memory + 0x200), length);

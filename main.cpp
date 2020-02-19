@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 			chip8.emulateCycle();
 		}
 		catch (OpCodeException e) {
-			std::cerr << e.getMessage << std::endl << "opcode: " << e.getOpCode << std::end << "Memory offset: " << e.getOffset << std::endl;
+			std::cerr << e.getMessage() << std::endl << "opcode: " << e.getOpCode() << std::endl << "Memory offset: " << e.getOffset() << std::endl;
 
 			window.clear();
 			displayError(window, "Exception", 5);
@@ -110,13 +110,15 @@ int main(int argc, char* argv[]) {
 
 		sf::RectangleShape pixel;
 		uint8_t i = 0;
-		for (auto memPixel : chip8.getPixels) {
+		for (auto memPixel : chip8.getPixels()) {
 			pixel.setFillColor(memPixel ? pixelOn : pixelOff);
 			pixel.setPosition(i % WIDTH * RES_MULT, i / WIDTH * RES_MULT);
 			pixel.setSize(sf::Vector2f(RES_MULT, RES_MULT));
+			// Draw primitives defined by a vertex buffer
 			window.draw(pixel);
 		}
 
+		// Display on screen what has been rendered to the window so far
 		window.display();
 	}
 

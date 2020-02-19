@@ -1,5 +1,8 @@
 #pragma once
 #include <cstdint>
+
+#define RES 64 * 32
+
 class Chip8 {
 private:
 	uint16_t opcode;
@@ -12,7 +15,7 @@ private:
 	void *sound;
 	void (*playSound)(void *sound);
 
-	uint8_t pixels[64 * 32];
+	uint8_t pixels[RES];
 	uint8_t keys[16];
 
 public:
@@ -27,7 +30,7 @@ public:
 	void keyPress(const uint8_t key);
 	void keyRelease(const uint8_t key);
 	void loadROM(const char* fName);
-	uint8_t* getPixels(void);
+	uint8_t (&getPixels(void))[RES];
 	void emulateCycle(void);
 	void setSound(void (*func)(void *sound), void *sound);
 

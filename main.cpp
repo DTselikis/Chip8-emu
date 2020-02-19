@@ -10,7 +10,7 @@
 #define HEIGHT 32
 #define PIXELS WIDTH * HEIGHT
 
-void displayError(const sf::RenderWindow &window, const std::string errorText, const uint8_t errorCode);
+void displayError(sf::RenderWindow &window, const std::string errorText, const uint8_t errorCode);
 void playSound(void *sound);
 
 

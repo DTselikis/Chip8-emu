@@ -39,11 +39,11 @@ Chip8::Chip8() {
     std::fill_n(keys, 16, false); // Clear keys array
 
     // Load fontset
-    *memory = *(uint64_t*)chip8_fontset;
-    *(memory + 64) = *(uint16_t*)(chip8_fontset + 64);
-    //for (int i = 0; i < 80; i++) {
-      //  memory[i] = chip8_fontset[i];
-    //}
+    //*memory = *(uint64_t*)chip8_fontset;
+    //*(memory + 64) = *(uint16_t*)(chip8_fontset + 64);
+    for (int i = 0; i < 80; i++) {
+       memory[i] = chip8_fontset[i];
+    }
 
     isRunning = true;
     waitForKey = false;

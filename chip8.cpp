@@ -33,6 +33,9 @@ Chip8::Chip8() {
     this->soundTimer = 0;
     this->playSound = NULL;
     this->sound = NULL;
+    this->isRunning = true;
+    this->waitForKey = false;
+    this->drawFlag = false;
 
     std::fill_n(memory, 4096, 0); // Clear memory
     std::fill_n(V, 16, 0); // Clear registers
@@ -46,10 +49,6 @@ Chip8::Chip8() {
     for (int i = 0; i < 80; i++) {
        memory[i] = chip8_fontset[i];
     }
-
-    isRunning = true;
-    waitForKey = false;
-
 }
 
 void Chip8::emulateCycle(void) {
@@ -99,6 +98,14 @@ uint8_t (&Chip8::getPixels(void))[RES]
     return pixels;
 }
 
+bool Chip8::getDrawFlag(void) {
+    return drawFlag;
+}
+
+void Chip8::setDrawFlag(bool flag) {
+    drawFlag = flag;
+}
+
 void Chip8::loadROM(const char* fName) {
     std::ifstream rom;
     rom.open(fName, std::ios::binary);
@@ -130,6 +137,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 case 0x0E0: { // Clear screan
                     std::fill_n(pixels, RES, 0);
                     pc += 2;
+                    drawFlag = true;
                     break;
                 }
                 case 0x0EE: { // Return from subroutine
@@ -313,6 +321,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 }
             }
             pc += 2;
+            drawFlag = true;
             break;
         }
         case 0xE000: {
@@ -366,12 +375,18 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                     pc += 2;
                     break;
                 }
-                case 0x01E: {
+                case 0x01E: { // TODO CHECK
                     // Adds VX to I
                     // VF is set to 1 when there is a range overflow
                     // and to 0 when there isn't
-                    V[0xF] = (I + (opcode >> 8 & 0x0F) > 0xFFF ? 1 : 0);
-                    I += opcode >> 8 & 0x0F;
+                    //V[0xF] = (I + (opcode >> 8 & 0x0F) > 0xFFF ? 1 : 0);
+					if (I > (0xfff - V[(opcode & 0x0f00) >> 8])){
+                        V[0xf] = 1;
+                    }
+                    else {
+                        V[0xf] = 0;
+                    }
+                    I += V[opcode >> 8 & 0x0F];
                     pc += 2;
                     break;
                 }
@@ -397,14 +412,14 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 case 0x055: {
                     // Stores V0 to VX (including VX) in memory starting at address I.
                     // The offset from I is increased by 1 for each value written, but I itself is left unmodified
-                    for (int i = 0; i <= (opcode >> 8 & 0x0F); i++) {
+                    for (uint16_t i = 0; i <= (opcode >> 8 & 0x0F); i++) {
                         memory[I + i] = V[i];
                     }
                     pc += 2;
                     break;
                 }
                 case 0x65: {
-                    for (int i = 0; i <= (opcode >> 8 & 0x0F); i++) {
+                    for (uint16_t i = 0; i <= (opcode >> 8 & 0x0F); i++) {
                         // Fills V0 to VX (including VX) with values from memory starting at address I.
                         // The offset from I is increased by 1 for each value written, but I itself is left unmodified.
                         V[i] = memory[I + i];

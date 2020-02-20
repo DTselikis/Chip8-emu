@@ -29,13 +29,15 @@ Chip8::Chip8() {
     this->opcode = 0;
     this->I = 0;
     this->sp = -1;
+    this->delayTimer = 0;
+    this->soundTimer = 0;
     this->playSound = NULL;
     this->sound = NULL;
 
     std::fill_n(memory, 4096, 0); // Clear memory
     std::fill_n(V, 16, 0); // Clear registers
     std::fill_n(stack, 16, 0); // Clear stack
-    std::fill_n(pixels, 64 * 32, 0); // Clear display
+    std::fill_n(pixels, RES, 0); // Clear display
     std::fill_n(keys, 16, false); // Clear keys array
 
     // Load fontset
@@ -51,29 +53,27 @@ Chip8::Chip8() {
 }
 
 void Chip8::emulateCycle(void) {
-    // Fetch opcode
-    opcode = memory[pc] << 8 | memory[pc + 1];
+    // If the execution is not halted
+    if (isRunning) {
+        // Fetch opcode
+        opcode = memory[pc] << 8 | memory[pc + 1];
 
-    if (!decodeOpCode(opcode)) {
-        throw OpCodeException(opcode, (uint8_t) memory + pc);
-    }
-    else {
-        if (delayTimer > 0) {
-            delayTimer--;
+        if (!decodeOpCode(opcode)) {
+            throw OpCodeException(opcode, (uint8_t)memory + pc);
         }
-        if (soundTimer > 0) {
-            if (soundTimer == 1) {
-                if (playSound) {
-                    // If a sound implementation was provided
-                    playSound(sound);
-                }
+        else {
+            if (delayTimer > 0) {
+                delayTimer--;
             }
-            soundTimer--;
-        }
-        // If the execution is not halted
-        if (isRunning) {
-            // Increase program counter
-            pc += 2;
+            if (soundTimer > 0) {
+                if (soundTimer == 1) {
+                    if (playSound) {
+                        // If a sound implementation was provided
+                        playSound(sound);
+                    }
+                }
+                soundTimer--;
+            }
         }
     }
 }
@@ -128,12 +128,13 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
         case 0x0: {
             switch (opcode & 0x0FF) {
                 case 0x0E0: { // Clear screan
-                    std::fill_n(pixels, 64 * 32, 0);
+                    std::fill_n(pixels, RES, 0);
                     pc += 2;
                     break;
                 }
                 case 0x0EE: { // Return from subroutine
                     pc = stack[sp--];
+                    pc += 2; // When returning, point to the next instuction
                     break;
                 }
                 default: {
@@ -154,7 +155,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
         }
         case 0x3000: {
             // Skips the next instruction if VX equals NN
-            if (V[opcode >> 8 & 0x0F] == opcode & 0x0FF) {
+            if (V[opcode >> 8 & 0x0F] == (opcode & 0x0FF)) {
                 pc += 2;
             }
             pc += 2;
@@ -162,8 +163,8 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
         }
         case 0x4000: {
             // Skips the next instruction if VX doesn't equal NN
-            if (V[opcode >> 8 & 0x0F] != opcode & 0x0FF) {
-                pc += 2;
+            if (V[opcode >> 8 & 0x0F] != (opcode & 0x0FF)) {
+                pc += 4; // TODO FIX
             }
             pc += 2;
             break;
@@ -176,7 +177,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
             pc += 2;
             break;
         }
-        case 0x6000: {
+        case 0x6000: { //Check
             // Sets VX to NN
             V[opcode >> 8 & 0x0F] = opcode & 0x0FF;
             pc += 2;
@@ -217,7 +218,8 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 case 0x04: { // TODO Check
                     // Adds VY to VX
                     // VF is set to 1 when there's a carry, and to 0 when there isn't
-                    V[0x0F] = (V[opcode >> 8 & 0xF] + V[opcode >> 4 & 0xF] > 0xFFF) ? 1 : 0;
+                    //V[0x0F] = (V[opcode >> 8 & 0xF] + V[opcode >> 4 & 0xF] > 0xFFF) ? 1 : 0;
+                    V[0x0F] = (V[(opcode & 0x00f0) >> 4] > (0xff - V[(opcode & 0x0f00) >> 8])) ? 1 : 0;
                     V[opcode >> 8 & 0xF] += V[opcode >> 4 & 0xF];
                     pc += 2;
                     break;
@@ -225,7 +227,8 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 case 0x05: { //TODO Check
                     // VY is subtracted from VX
                     // VF is set to 0 when there's a borrow, and 1 when there isn't
-                    V[0x0F] = (V[opcode >> 8 & 0xF] > V[opcode >> 4 & 0xF]) ? 1 : 0;
+                    //V[0x0F] = (V[opcode >> 8 & 0xF] > V[opcode >> 4 & 0xF]) ? 1 : 0;
+                    V[0xf] = (V[(opcode & 0x0f00) >> 8] > (V[(opcode & 0x00f0) >> 4])) ? 1 : 0;
                     V[opcode >> 8 & 0xF] -= V[opcode >> 4 & 0xF];
                     pc += 2;
                     break;
@@ -240,7 +243,8 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 case 0x07: { // TODO Check
                     // Sets VX to VY minus VX
                     // VF is set to 0 when there's a borrow, and 1 when there isn't
-                    V[0x0F] = (V[opcode >> 4 & 0x0F] > V[opcode >> 8 & 0x0F] ? 0 : 1);
+                    //V[0x0F] = (V[opcode >> 4 & 0x0F] > V[opcode >> 8 & 0x0F] ? 0 : 1);
+                    V[0xf] = (V[(opcode & 0x00f0) >> 4] > (V[(opcode & 0x0f00) >> 8])) ? 1 : 0;
                     V[opcode >> 8 & 0x0F] = V[opcode >> 4 & 0xF] - V[opcode >> 8 & 0x0F];
                     pc += 2;
                     break;
@@ -249,7 +253,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                 case 0x0E: {
                     // 	Stores the most significant bit of VX in VF
                     // and then shifts VX to the left by 1
-                    V[0x0F] = V[opcode >> 8 & 0x0F] >> 15 & 0x01;
+                    V[0x0F] = V[opcode >> 8 & 0x0F] >> 7;
                     V[opcode >> 8 & 0x0F] <<= 1;
                     pc += 2;
                     break;
@@ -297,17 +301,18 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
             uint16_t pixel;
 
             V[0x0F] = 0;
-            for (int yline = 0; yline < height; yline++) {
+            for (uint16_t yline = 0; yline < height; yline++) {
                 pixel = memory[I + yline];
-                for (int xline = 0; xline < 8; xline++) {
+                for (uint16_t xline = 0; xline < 8; xline++) {
                     if ((pixel & (0x80 >> xline)) != 0) {
-                        if (pixels[vx + xline + ((vy + yline) * 64)] == 1) {
+                        if (pixels[(vx + xline + ((vy + yline) * 64))] == 1) {
                             V[0x0F] = 1;
                         }
                         pixels[vx + xline + ((vy + yline) * 64)] ^= 1;
                     }
                 }
             }
+            pc += 2;
             break;
         }
         case 0xE000: {
@@ -346,6 +351,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                     // A keys press is awaited, and then stored in VX
                     waitForKey = true;
                     isRunning = false;
+                    pc += 2;
                     break;
                 }
                 case 0x015: {
@@ -365,7 +371,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                     // VF is set to 1 when there is a range overflow
                     // and to 0 when there isn't
                     V[0xF] = (I + (opcode >> 8 & 0x0F) > 0xFFF ? 1 : 0);
-                    I = opcode >> 8 & 0x0F;
+                    I += opcode >> 8 & 0x0F;
                     pc += 2;
                     break;
                 }
@@ -373,6 +379,7 @@ bool Chip8::decodeOpCode(const uint16_t opcode) {
                     // Sets I to the location of the sprite for the character in VX.
                     // Characters 0-F (in hexadecimal) are represented by a 4x5 font
                     I = V[opcode >> 8 & 0x0F] * 5; // Each row has 5 elements
+                    pc += 2;
                     break;
                 }
                 case 0x033: {

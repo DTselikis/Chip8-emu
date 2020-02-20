@@ -2,3 +2,4 @@ Chip8Emu.vcxproj
 Chip8Emu.vcxproj.filters
 Chip8Emu.vcxproj.user
 Debug/
+Release/

@@ -108,18 +108,24 @@ int main(int argc, char* argv[]) {
 			displayError(window, "Exception", 5);
 		}
 
-		sf::RectangleShape pixel;
-		uint8_t i = 0;
-		for (auto memPixel : chip8.getPixels()) {
-			pixel.setFillColor(memPixel ? pixelOn : pixelOff);
-			pixel.setPosition(i % WIDTH * RES_MULT, i / WIDTH * RES_MULT);
-			pixel.setSize(sf::Vector2f(RES_MULT, RES_MULT));
-			// Draw primitives defined by a vertex buffer
-			window.draw(pixel);
-		}
+		// Refresh screen only if changes is pixels occured
+		if (chip8.getDrawFlag()) {
+			sf::RectangleShape pixel;
+			uint16_t i = 0;
+			window.clear();
+			for (auto memPixel : chip8.getPixels()) {
+				pixel.setFillColor(memPixel ? pixelOn : pixelOff);
+				pixel.setPosition(i % WIDTH * RES_MULT, i / WIDTH * RES_MULT);
+				pixel.setSize(sf::Vector2f(RES_MULT, RES_MULT));
+				// Draw primitives defined by a vertex buffer
+				window.draw(pixel);
+				i++;
+			}
 
-		// Display on screen what has been rendered to the window so far
-		window.display();
+			// Display on screen what has been rendered to the window so far
+			window.display();
+			chip8.setDrawFlag(true);
+		}
 	}
 
 	delete sound;

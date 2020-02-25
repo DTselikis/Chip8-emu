@@ -12,6 +12,7 @@ private:
 	uint16_t pc;
 	bool waitForKey;
 	bool isRunning;
+	bool drawFlag;
 	void *sound;
 	void (*playSound)(void *sound);
 
@@ -31,6 +32,8 @@ public:
 	void keyRelease(const uint8_t key);
 	void loadROM(const char* fName);
 	uint8_t (&getPixels(void))[RES];
+	bool getDrawFlag(void);
+	void setDrawFlag(bool flag);
 	void emulateCycle(void);
 	void setSound(void (*func)(void *sound), void *sound);
 
